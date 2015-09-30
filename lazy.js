@@ -51,11 +51,8 @@ console.log(force(t));
 
 // BEGIN delay (DO NOT DELETE THIS LINE)
 function delay(f) {
-    function helper() {
-        return f();
-    }
-    return helper;
-};
+    return f;
+}
 // END delay (DO NOT DELETE THIS LINE)
 
 function force(t) {
@@ -125,10 +122,7 @@ console.log(take(5, repeat(2)));
 
 // BEGIN enumFrom (DO NOT DELETE THIS LINE)
 function enumFrom(n) {
-    return delay(function() {
-        return { head:n,
-                 tail: enumFrom(n+1)};
-    });
+    // your code hre
 }
 // END enumFrom (DO NOT DELETE THIS LINE)
 
@@ -140,11 +134,7 @@ console.log(take(5, enumFrom(2)));
 
 // BEGIN map (DO NOT DELETE THIS LINE)
 function map(f, thunk_xs) {
-    return delay(function() {
-        var xs = force(thunk_xs);
-        return { head: f(xs.head),
-                 tail: map(f,xs.tail)};
-    });
+    // your code here
 }
 // END map (DO NOT DELETE THIS LINE)
 
@@ -159,12 +149,7 @@ console.log(take(5, xs));
 
 // BEGIN zipWith (DO NOT DELETE THIS LINE)
 function zipWith(f, thunk_xs, thunk_ys) {
-    return delay(function() {
-        var xs = force(thunk_xs);
-        var ys = force(thunk_ys);
-        return { head: f(xs.head,ys.head),
-                 tail: zipWith(f,xs.tail,ys.tail)};
-    });
+    // your code here
 }
 // END zipWith (DO NOT DELETE THIS LINE)
 

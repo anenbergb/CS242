@@ -34,6 +34,7 @@ module Calculator where
 
 import Test.QuickCheck
 import Test.QuickCheck.Gen
+
 import Debug.Trace
 
 -------------------------------------------------------------------
@@ -86,12 +87,7 @@ interpBinOp Times = (*)
 
 interp :: Expr -> Int
 -- BEGIN interp (DO NOT DELETE THIS LINE)
-interp e = case e of
-    Lit n -> n
-    Op BinOp Expr Expr -> (interpBinOp BinOp) (interp Expr) (interp Expr)
---Op BinOp e1 e1 -> interpBinOp (interp e1) (interp e2)
-
---interp = undefined
+interp = undefined
 -- END interp (DO NOT DELETE THIS LINE)
 
 -------------------------------------------------------------------
@@ -120,9 +116,7 @@ interp e = case e of
 
 simplifyZero :: Expr -> Expr
 -- BEGIN simplifyZero (DO NOT DELETE THIS LINE)
-simplifyZero (Op Plus e (Lit 0)) = e
--- simplifyZero e {e + 0} = e
--- simplifyZero e + 0 = "e"
+simplifyZero e {- replace this pattern -} = e
 -- END simplifyZero (DO NOT DELETE THIS LINE)
 simplifyZero e = e
 
@@ -150,8 +144,6 @@ simplifyZero e = e
 
 prop_optimizer_correctness :: Expr -> Bool
 -- BEGIN prop_optimizer_correctness (DO NOT DELETE THIS LINE)
-
-
 prop_optimizer_correctness = undefined
 -- END prop_optimizer_correctness (DO NOT DELETE THIS LINE)
 
@@ -233,12 +225,9 @@ expr_shrink e = []
 --
 -- (Hint: if your implementation of peephole infinite loops, try using
 -- the 'trace' function to get more insight into what is going on.)
--- foo Red = trace "Red" (...)
-
 
 peephole :: (Expr -> Expr) -> Expr -> Expr
 -- BEGIN peephole (DO NOT DELETE THIS LINE)
-
 peephole = undefined
 -- END peephole (DO NOT DELETE THIS LINE)
 
