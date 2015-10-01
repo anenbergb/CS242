@@ -34,6 +34,7 @@ module Calculator where
 
 import Test.QuickCheck
 import Test.QuickCheck.Gen
+
 import Debug.Trace
 
 -------------------------------------------------------------------
@@ -86,12 +87,9 @@ interpBinOp Times = (*)
 
 interp :: Expr -> Int
 -- BEGIN interp (DO NOT DELETE THIS LINE)
-interp e = case e of
-    Lit n -> n
-    Op BinOp Expr Expr -> (interpBinOp BinOp) (interp Expr) (interp Expr)
---Op BinOp e1 e1 -> interpBinOp (interp e1) (interp e2)
+interp (Lit n) = n
+interp (Op binop e1 e2) = (interpBinOp binop) (interp e1) (interp e2)
 
---interp = undefined
 -- END interp (DO NOT DELETE THIS LINE)
 
 -------------------------------------------------------------------
@@ -121,8 +119,6 @@ interp e = case e of
 simplifyZero :: Expr -> Expr
 -- BEGIN simplifyZero (DO NOT DELETE THIS LINE)
 simplifyZero (Op Plus e (Lit 0)) = e
--- simplifyZero e {e + 0} = e
--- simplifyZero e + 0 = "e"
 -- END simplifyZero (DO NOT DELETE THIS LINE)
 simplifyZero e = e
 
@@ -150,14 +146,17 @@ simplifyZero e = e
 
 prop_optimizer_correctness :: Expr -> Bool
 -- BEGIN prop_optimizer_correctness (DO NOT DELETE THIS LINE)
-
-
-prop_optimizer_correctness = undefined
+prop_optimizer_correctness e = 
+    interp (simplifyZero e) == interp e
+--prop_optimizer_correctness simplifyZero (Lit a) == (Lit a) = True
+--prop_optimizer_correctness simplifyZero (Op binop e1 e2) == (Op binop e1 e2) = True
 -- END prop_optimizer_correctness (DO NOT DELETE THIS LINE)
 
 prop_optimizer_idempotent :: Expr -> Bool
 -- BEGIN prop_optimizer_idempotent (DO NOT DELETE THIS LINE)
-prop_optimizer_idempotent = undefined
+prop_optimizer_idempotent e =
+    interp (Lit (interp (simplifyZero e))) == interp (simplifyZero e)
+--prop_optimizer_idempotent simplifyZero 
 -- END prop_optimizer_idempotent (DO NOT DELETE THIS LINE)
 
 -- For property (3), we've written the following helper function
@@ -173,7 +172,8 @@ findPlusZero (Op _ e1 e2)        = findPlusZero e1 || findPlusZero e2
 -- NB: This one will fail! This is expected! Keep reading.
 prop_optimizer_optimizes :: Expr -> Bool
 -- BEGIN prop_optimizer_optimizes (DO NOT DELETE THIS LINE)
-prop_optimizer_optimizes = undefined
+prop_optimizer_optimizes e =
+    findPlusZero (peephole simplifyZero e) == False
 -- END prop_optimizer_optimizes (DO NOT DELETE THIS LINE)
 
 -- You may have noticed that property (3) is failing, and QuickCheck
@@ -213,7 +213,16 @@ prop_optimizer_optimizes = undefined
 
 expr_shrink :: Expr -> [Expr]
 -- BEGIN expr_shrink (DO NOT DELETE THIS LINE)
-expr_shrink e = []
+--expr_shrink e =
+--    case e of
+--        Lit n -> [x]
+        --(Op binop e1 e2) -> e1:e1:[]
+--        (Op _ e1 e2 ) -> (expr_shrink e1) ++ (expr_shrink e2)
+
+expr_shrink (Lit e) = []
+expr_shrink (Op _ e1 e2) = e1:e2:[]
+
+--expr_shrink e = []
 -- END expr_shrink (DO NOT DELETE THIS LINE)
 
 -- At this point, it should be clear that the property fails
@@ -233,13 +242,12 @@ expr_shrink e = []
 --
 -- (Hint: if your implementation of peephole infinite loops, try using
 -- the 'trace' function to get more insight into what is going on.)
--- foo Red = trace "Red" (...)
-
 
 peephole :: (Expr -> Expr) -> Expr -> Expr
 -- BEGIN peephole (DO NOT DELETE THIS LINE)
+peephole simplifyZero (Lit n) = Lit n
+peephole simplifyZero (Op binop e1 e2) = simplifyZero (Op binop (peephole simplifyZero e1) (peephole simplifyZero e2)) 
 
-peephole = undefined
 -- END peephole (DO NOT DELETE THIS LINE)
 
 -- Once you are done, update your QuickCheck tests to use the
@@ -296,7 +304,9 @@ type Stack = [Int]
 
 step :: Instr -> Stack -> Maybe Stack
 -- BEGIN step (DO NOT DELETE THIS LINE)
-step = undefined
+step (IPush n) stk = Just ( n:stk)
+step (IOp b) (x:y:rest) = Just (interp (Op b (Lit x) (Lit y)):rest)
+step _ _ = Nothing
 -- END step (DO NOT DELETE THIS LINE)
 
 -- We should also tie this together, and write a function that
@@ -305,8 +315,13 @@ step = undefined
 
 run :: [Instr] -> Stack -> Maybe Stack
 -- BEGIN run (DO NOT DELETE THIS LINE)
-run = undefined
+run [] stk = Just stk
+run (i:is) stk =
+    case step i stk of
+        Nothing -> Nothing
+        Just stk' -> run is stk'
 -- END run (DO NOT DELETE THIS LINE)
+
 
 -------------------------------------------------------------------
 
@@ -327,7 +342,8 @@ run = undefined
 
 compile :: Expr -> [Instr]
 -- BEGIN compile (DO NOT DELETE THIS LINE)
-compile = undefined
+compile (Lit x) = (Lit x):[]
+compile (Op b e1 e2) = (compile e2) ++ (compile e1) ++ (IOp b):[]
 -- END compile (DO NOT DELETE THIS LINE)
 
 -- Your compiler is correct if running the instructions produced
@@ -336,7 +352,15 @@ compile = undefined
 
 prop_compile_correctness :: Expr -> Bool
 -- BEGIN prop_compile_correctness (DO NOT DELETE THIS LINE)
-prop_compile_correctness = undefined
+prop_compile_correctness e
+    | result = True
+    | otherwise = False
+    where 
+        r = run (compile e) []
+        result = (case r of 
+            Just s -> (head s) == (interp e) 
+            Nothing -> False)
+
 -- END prop_compile_correctness (DO NOT DELETE THIS LINE)
 
 -- We've also provided for you a simple decompiler which takes
