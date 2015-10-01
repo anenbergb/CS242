@@ -51,8 +51,12 @@ console.log(force(t));
 
 // BEGIN delay (DO NOT DELETE THIS LINE)
 function delay(f) {
+    var b = true;
     function helper() {
-        return f();
+        if (b) {
+            b = false;
+            return f();
+        }
     }
     return helper;
 };
