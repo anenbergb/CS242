@@ -146,16 +146,22 @@ simplifyZero e = e
 
 prop_optimizer_correctness :: Expr -> Bool
 -- BEGIN prop_optimizer_correctness (DO NOT DELETE THIS LINE)
-prop_optimizer_correctness e = 
-    interp (simplifyZero e) == interp e
+--prop_optimizer_correctness e = interp (simplifyZero e) == interp e
+prop_optimizer_correctness e = (interp e) == (interp (peephole simplifyZero e))
+
 --prop_optimizer_correctness simplifyZero (Lit a) == (Lit a) = True
 --prop_optimizer_correctness simplifyZero (Op binop e1 e2) == (Op binop e1 e2) = True
 -- END prop_optimizer_correctness (DO NOT DELETE THIS LINE)
 
 prop_optimizer_idempotent :: Expr -> Bool
 -- BEGIN prop_optimizer_idempotent (DO NOT DELETE THIS LINE)
-prop_optimizer_idempotent e =
-    interp (Lit (interp (simplifyZero e))) == interp (simplifyZero e)
+--prop_optimizer_idempotent e =
+--    interp (Lit (interp (simplifyZero e))) == interp (simplifyZero e)
+
+prop_optimizer_idempotent e = 
+    let e1 = peephole simplifyZero e
+    in e1 == peephole simplifyZero e1
+
 --prop_optimizer_idempotent simplifyZero 
 -- END prop_optimizer_idempotent (DO NOT DELETE THIS LINE)
 
@@ -174,6 +180,10 @@ prop_optimizer_optimizes :: Expr -> Bool
 -- BEGIN prop_optimizer_optimizes (DO NOT DELETE THIS LINE)
 prop_optimizer_optimizes e =
     findPlusZero (peephole simplifyZero e) == False
+
+-- could use not
+
+
 -- END prop_optimizer_optimizes (DO NOT DELETE THIS LINE)
 
 -- You may have noticed that property (3) is failing, and QuickCheck
@@ -219,8 +229,15 @@ expr_shrink :: Expr -> [Expr]
         --(Op binop e1 e2) -> e1:e1:[]
 --        (Op _ e1 e2 ) -> (expr_shrink e1) ++ (expr_shrink e2)
 
+--expr_shrink (Lit e) = []
+--expr_shrink (Op _ e1 e2) = e1:e2:[]
+
 expr_shrink (Lit e) = []
-expr_shrink (Op _ e1 e2) = e1:e2:[]
+expr_shrink e@(Op b e1 e2) =
+    [Lit (interp e), e1, e2]
+    ++ [Op b e1' e2 | e1' <- expr_shrink e1]
+    ++ [Op b e1 e2' | e2' <- expr_shrink e2]
+
 
 --expr_shrink e = []
 -- END expr_shrink (DO NOT DELETE THIS LINE)
@@ -245,8 +262,8 @@ expr_shrink (Op _ e1 e2) = e1:e2:[]
 
 peephole :: (Expr -> Expr) -> Expr -> Expr
 -- BEGIN peephole (DO NOT DELETE THIS LINE)
-peephole simplifyZero (Lit n) = Lit n
-peephole simplifyZero (Op binop e1 e2) = simplifyZero (Op binop (peephole simplifyZero e1) (peephole simplifyZero e2)) 
+peephole f (Lit n) = Lit n
+peephole f (Op binop e1 e2) = f (Op binop (peephole f e1) (peephole f e2)) 
 
 -- END peephole (DO NOT DELETE THIS LINE)
 
@@ -305,7 +322,8 @@ type Stack = [Int]
 step :: Instr -> Stack -> Maybe Stack
 -- BEGIN step (DO NOT DELETE THIS LINE)
 step (IPush n) stk = Just ( n:stk)
-step (IOp b) (x:y:rest) = Just (interp (Op b (Lit x) (Lit y)):rest)
+--step (IOp b) (x:y:rest) = Just (interp (Op b (Lit x) (Lit y)):rest)
+step (IOp b) (x:y:rest) = Just ((interpBinOp b x y):rest)
 step _ _ = Nothing
 -- END step (DO NOT DELETE THIS LINE)
 
@@ -342,8 +360,8 @@ run (i:is) stk =
 
 compile :: Expr -> [Instr]
 -- BEGIN compile (DO NOT DELETE THIS LINE)
-compile (Lit x) = (Lit x):[]
-compile (Op b e1 e2) = (compile e2) ++ (compile e1) ++ (IOp b):[]
+compile (Lit x) = [IPush x]
+compile (Op b e1 e2) = (compile e2) ++ (compile e1) ++ [IOp b]
 -- END compile (DO NOT DELETE THIS LINE)
 
 -- Your compiler is correct if running the instructions produced
@@ -352,15 +370,22 @@ compile (Op b e1 e2) = (compile e2) ++ (compile e1) ++ (IOp b):[]
 
 prop_compile_correctness :: Expr -> Bool
 -- BEGIN prop_compile_correctness (DO NOT DELETE THIS LINE)
-prop_compile_correctness e
-    | result = True
-    | otherwise = False
-    where 
-        r = run (compile e) []
-        result = (case r of 
-            Just s -> (head s) == (interp e) 
-            Nothing -> False)
 
+--prop_compile_correctness e
+--    | result = True
+--    | otherwise = False
+--    where 
+--        r = run (compile e) []
+--        result = (case r of 
+--            Just s -> (head s) == (interp e) 
+--            Nothing -> False)
+
+--prop_compile_correctness e = 
+--    case run (compile e) [] of
+--        Nothing -> False
+--        Just s -> s == interp e
+
+prop_compile_correctness e = Just [interp e] == run (compile e) []
 -- END prop_compile_correctness (DO NOT DELETE THIS LINE)
 
 -- We've also provided for you a simple decompiler which takes
@@ -379,12 +404,19 @@ decompile is =
 
 prop_compile_decompile :: Expr -> Bool
 -- BEGIN prop_compile_decompile (DO NOT DELETE THIS LINE)
-prop_compile_decompile = undefined
+prop_compile_decompile e = Just e == decompile (compile e)
+
+--prop_compile_decompile = undefined
 -- END prop_compile_decompile (DO NOT DELETE THIS LINE)
 
 prop_decompile_compile :: [Instr] -> Bool
 -- BEGIN prop_decompile_compile (DO NOT DELETE THIS LINE)
-prop_decompile_compile = undefined
+prop_decompile_compile e = 
+    case decompile e of
+        Just r -> compile r == e
+        Nothing -> True
+
+--prop_decompile_compile = undefined
 -- END prop_decompile_compile (DO NOT DELETE THIS LINE)
 
 -- That concludes this lab!  See the assigment release announcement
