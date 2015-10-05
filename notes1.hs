@@ -68,6 +68,9 @@ multThree x y z = x * y * z
 
 --By calling functions with too few paramters we create
 --new functions on the fly
+multTwoWithNine = multThree 9
+--this one only requires 2 arguments.
+
 
 compareWithHundred :: (Num a, Ord a) => a -> Ordering  
 compareWithHundred x = compare 100 x  

@@ -74,6 +74,9 @@ type Name = String
 
 fv :: Expr -> Set Name
 -- BEGIN fv (DO NOT DELETE THIS LINE)
+fv (Var n) = Set.singleton n
+fv (Lambda n e) = 
+
 fv = undefined
 -- END fv (DO NOT DELETE THIS LINE)
 
