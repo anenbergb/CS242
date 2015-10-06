@@ -30,7 +30,7 @@ import Data.List
 --
 -- This enables a syntax-extension, overloaded strings, which will
 -- allow you to type Haskell-style "\\x -> x" for a lambda expression,
--- instead of having to type out Lambda (Var "x") (Var "x").  (Note
+-- instead of having to type out Lambda "x" (Var "x").  (Note
 -- that if you are typing a String literal, backslashes must be
 -- escaped.)
 --
@@ -74,10 +74,16 @@ type Name = String
 
 fv :: Expr -> Set Name
 -- BEGIN fv (DO NOT DELETE THIS LINE)
-fv (Var n) = Set.singleton n
-fv (Lambda n e) = 
-
-fv = undefined
+--error: equations for fv have different number of arguments.
+fv (Var x:xs)
+    | x == " " = fv xs
+    | otherwise = Set.union (Set.singleton x) (fv xs)
+--assume name is just a single variable, like "x"
+fv (Lambda n e)
+    | Set.member n r  = Set.delete n r
+    | otherwise = r
+    where r = fv e
+fv (App e1 e2) = Set.union (fv e1) (fv e2)
 -- END fv (DO NOT DELETE THIS LINE)
 
 -------------------------------------------------------------------
