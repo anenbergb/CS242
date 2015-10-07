@@ -80,7 +80,7 @@ fv :: Expr -> Set Name
 --    | otherwise = Set.union (Set.singleton x) (fv xs)
 --    where x:xs = e
 -- 
-fv (Var e) = Set.singleton x   
+fv (Var e) = Set.singleton e   
 --assume name is just a single variable, like "x"
 fv (Lambda n e)
     | Set.member n r  = Set.delete n r
@@ -148,7 +148,19 @@ freshDumb u = ("$u" ++ show u, u+1)
 -- a new 'FreshSupply'.
 
 -- BEGIN substDumb (DO NOT DELETE THIS LINE)
-substDumb = undefined
+substDumb :: FreshSupply -> Expr -> Subst -> (Expr, FreshSupply)
+substDumb fs (Var k) s =
+	case Map.lookup k s of
+		Nothing -> (k,fs)
+		Just a -> (a,fs)
+substDumb fs (Lambda k e) s =
+	do fsnext <- freshDumb fs
+		case Map.lookup k s of
+			Nothing -> s1 <- Map.insert k (fst fsnext) s
+			Just a -> s1 <- Map.insert k (fst fsnext) (Map.delete k s)
+		r <- substDumb (snd fsnext) e s1
+		return (Lambda (fst fsnexst) (fst r), snd r)
+ 
 -- END substDumb (DO NOT DELETE THIS LINE)
 
 -- This strategy is pretty annoying:
