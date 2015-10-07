@@ -75,9 +75,10 @@ type Name = String
 fv :: Expr -> Set Name
 -- BEGIN fv (DO NOT DELETE THIS LINE)
 --error: equations for fv have different number of arguments.
-fv (Var x:xs)
+fv (Var e)
     | x == " " = fv xs
     | otherwise = Set.union (Set.singleton x) (fv xs)
+    where x:xs = e
 --assume name is just a single variable, like "x"
 fv (Lambda n e)
     | Set.member n r  = Set.delete n r
