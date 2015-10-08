@@ -148,7 +148,9 @@ freshDumb u = ("$u" ++ show u, u+1)
 -- a new 'FreshSupply'.
 
 -- BEGIN substDumb (DO NOT DELETE THIS LINE)
-substDumb = undefined
+substDumb 
+
+
 -- END substDumb (DO NOT DELETE THIS LINE)
 
 -- This strategy is pretty annoying:
@@ -222,7 +224,12 @@ fresh in_scope x = head (filter (`Set.notMember` in_scope) cands)
 
 substScope :: Expr -> Subst -> InScope -> Expr
 -- BEGIN substScope (DO NOT DELETE THIS LINE)
-substScope = undefined
+substScope (Var n) s in_scope =
+
+substScope (Lambda x e) s in_scope
+  | x "in" in_scope = let y = fresh x in_scope
+    in Lambda y
+
 -- END substScope (DO NOT DELETE THIS LINE)
 
 -- An easy way to get the initial in-scope set given just a
