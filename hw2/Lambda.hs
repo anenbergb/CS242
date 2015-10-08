@@ -151,16 +151,38 @@ freshDumb u = ("$u" ++ show u, u+1)
 substDumb :: FreshSupply -> Expr -> Subst -> (Expr, FreshSupply)
 substDumb fs (Var k) s =
 	case Map.lookup k s of
-		Nothing -> (k,fs)
-		Just a -> (a,fs)
-substDumb fs (Lambda k e) s =
-	do fsnext <- freshDumb fs
-		case Map.lookup k s of
-			Nothing -> s1 <- Map.insert k (fst fsnext) s
-			Just a -> s1 <- Map.insert k (fst fsnext) (Map.delete k s)
-		r <- substDumb (snd fsnext) e s1
-		return (Lambda (fst fsnexst) (fst r), snd r)
+		Nothing -> (Var k, fs)
+		Just a -> (a, fs)
+
+--substDumb fs (Lambda k e) s =
+--let fsnext = freshDumb fs
+-- s1 = if ((Map.lookup k s) == Nothing) then Map.insert k (fst fsnext) s else Map.insert k (fst fsnext) (Map.delete k s)
+--		Nothing -> s1 <- Map.insert k (fst fsnext) s
+--		Just a -> s1 <- Map.insert k (fst fsnext) (Map.delete k s)
+--	r = substDumb (snd fsnext) e s1
+---in (Lambda (fst fsnexst) (fst r), snd r)
  
+--substDumb fs (Lambda k e) s =
+--  let fs1  ="$u" ++ show fs
+--      s1 = Map.insert k (Var fs1) s
+--      r = substDumb (fs+1) e s1
+--  in (Lambda fs1 (fst r), fs+1)
+
+  --fsnext <- freshDumb fs
+  --s1 <- Map.insert k (Var (fst fsnext)) s
+  -- r <- substDumb (snd fsnext) e s1
+  -- return (Lambda (Var (fst fsnext)) (fst r), snd r)
+substDumb fs (Lambda k e) s =
+  let fs1  ="$u" ++ show fs
+      s1 = Map.insert k (Var fs1) s
+      r = substDumb (fs+1) e s1
+  in (Lambda fs1 $ fst r, fs+1)
+
+--substDumb fs (App e1 e2) s = do
+--  r1 <- substDumb fs e1 s
+--  r2 <- substDumb (snd r1) e2 s
+--  return (App (fst r1) (fst r2), snd r2)
+
 -- END substDumb (DO NOT DELETE THIS LINE)
 
 -- This strategy is pretty annoying:
