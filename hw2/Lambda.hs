@@ -80,7 +80,7 @@ fv :: Expr -> Set Name
 --    | otherwise = Set.union (Set.singleton x) (fv xs)
 --    where x:xs = e
 -- 
-fv (Var e) = Set.singleton x   
+fv (Var e) = Set.singleton e   
 --assume name is just a single variable, like "x"
 fv (Lambda n e)
     | Set.member n r  = Set.delete n r
@@ -148,8 +148,20 @@ freshDumb u = ("$u" ++ show u, u+1)
 -- a new 'FreshSupply'.
 
 -- BEGIN substDumb (DO NOT DELETE THIS LINE)
-substDumb 
-
+substDumb :: FreshSupply -> Expr -> Subst -> (Expr, FreshSupply)
+substDumb fs (Var k) s =
+	case Map.lookup k s of
+		Nothing -> (Var k, fs)
+		Just a -> (a, fs)
+substDumb fs (Lambda k e) s =
+  let fs1  = "$u" ++ show fs
+      s1 = Map.insert k (Var fs1) s
+      r = substDumb (fs+1) e s1
+  in (Lambda fs1 $ fst r, fs+1)
+substDumb fs (App e1 e2) s =
+  let r1 = substDumb fs e1 s
+      r2 = substDumb (snd r1) e2 s
+  in (App (fst r1) (fst r2), snd r2)
 
 -- END substDumb (DO NOT DELETE THIS LINE)
 
