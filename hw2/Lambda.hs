@@ -74,12 +74,6 @@ type Name = String
 
 fv :: Expr -> Set Name
 -- BEGIN fv (DO NOT DELETE THIS LINE)
---error: equations for fv have different number of arguments.
---fv (Var e)
---    | x == " " = fv xs
---    | otherwise = Set.union (Set.singleton x) (fv xs)
---    where x:xs = e
--- 
 fv (Var e) = Set.singleton e   
 --assume name is just a single variable, like "x"
 fv (Lambda n e)
@@ -157,7 +151,7 @@ substDumb fs (Lambda k e) s =
   let fs1  = "$u" ++ show fs
       s1 = Map.insert k (Var fs1) s
       r = substDumb (fs+1) e s1
-  in (Lambda fs1 $ fst r, fs+1)
+  in (Lambda fs1 $ fst r, snd r)
 substDumb fs (App e1 e2) s =
   let r1 = substDumb fs e1 s
       r2 = substDumb (snd r1) e2 s
@@ -233,16 +227,25 @@ fresh in_scope x = head (filter (`Set.notMember` in_scope) cands)
 -- Implement substitution using an "in-scope" set.  (Hint: a full
 -- description of how to do it is "Secrets of the Glasgow Haskell
 -- Compiler inliner.")
+--inscope unshadows
 
 substScope :: Expr -> Subst -> InScope -> Expr
 -- BEGIN substScope (DO NOT DELETE THIS LINE)
-substScope (Var n) s in_scope =
+substScope (Var k) s in_scope =
+  case Map.lookup k s of
+    Nothing -> Var k
+    Just a -> a
 
 substScope (Lambda x e) s in_scope
-  | x "in" in_scope = let y = fresh x in_scope
-    in Lambda y
+  | Set.member x in_scope = 
+    let y = fresh in_scope x
+    in Lambda y (substScope e (Map.insert x (Var y) s) (Set.union in_scope (Set.singleton y)))
+  | otherwise = Lambda x (substScope e (Map.delete x s) (Set.union in_scope (Set.singleton x)))
+
+substScope (App e1 e2) s in_scope = App (substScope e1 s in_scope) (substScope e2 s in_scope)
 
 -- END substScope (DO NOT DELETE THIS LINE)
+
 
 -- An easy way to get the initial in-scope set given just a
 -- substitution and an expression is to just take the free
@@ -272,7 +275,16 @@ subst e s = substScope e s (Set.union (fv e) (Set.unions (map fv (Map.elems s)))
 
 alphaEq :: Expr -> Expr -> Bool
 -- BEGIN alphaEq (DO NOT DELETE THIS LINE)
-alphaEq = undefined
+alphaEq e1 e2 = alphaHelp 0 e1 Map.empty e2 Map.empty 
+
+alphaHelp :: Int -> Expr -> Map Name Int -> Expr -> Map Name Int -> Bool
+alphaHelp i (Lambda x1 e1) m1 (Lambda x2 e2) m2 = alphaHelp (i+1) e1 (Map.insert x1 i m1) e2 (Map.insert x2 i m2)
+alphaHelp i (Var x1) m1 (Var x2) m2 =
+  case (Map.lookup x1 m1, Map.lookup x2 m2) of
+    (Just i1, Just i2) -> i1 == i2
+    _ -> False
+alphaHelp _ _ _ _ _ = False
+
 -- END alphaEq (DO NOT DELETE THIS LINE)
 
 -- Here are some examples to test on. (Question: which of these
@@ -304,7 +316,12 @@ prop_alphaEq_refl e = alphaEq e e
 -- "plain old style.")
 
 -- BEGIN QuickCheck (DO NOT DELETE THIS LINE)
--- Your properties here
+
+--do something like before.
+--prop_optimizer_idempotent e = 
+--    let e1 = peephole simplifyZero e
+--    in e1 == peephole simplifyZero e1
+
 -- END QuickCheck (DO NOT DELETE THIS LINE)
 
 -------------------------------------------------------------------
@@ -325,7 +342,11 @@ prop_alphaEq_refl e = alphaEq e e
 
 step_cbn :: Expr -> Maybe Expr
 -- BEGIN step_cbn (DO NOT DELETE THIS LINE)
-step_cbn = undefined
+step_cbn App (Lambda x e1) (Var e2) = subst e1 (Map.insert x e2 Map.empty)
+step_cbn (Var e1) = step_cbn e1
+step_c App e1 e2 = App (step_cbn e1) e2 
+step_cbn _ = Nothing
+
 -- END step_cbn (DO NOT DELETE THIS LINE)
 
 -- With a step function, we can write a function which takes an
@@ -342,7 +363,10 @@ step_cbn = undefined
 
 reductions :: (Expr -> Maybe Expr) -> Expr -> [Expr]
 -- BEGIN reductions (DO NOT DELETE THIS LINE)
-reductions = undefined
+reductions s_cbn e1
+  | result == Nothing = []
+  | result == Just e = e:reductions s_cbn e
+  where result = s_cbn e1
 -- END reductions (DO NOT DELETE THIS LINE)
 
 -------------------------------------------------------------------
