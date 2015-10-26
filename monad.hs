@@ -188,6 +188,8 @@ class HasMappable f where
 
 
 
+compose :: (a -> b) -> (b -> c) -> (a -> c)
+compose = \x -> \y -> function body
 
 
 
